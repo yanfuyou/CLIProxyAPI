@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -38,6 +40,9 @@ const attemptMaxIdleTime = 2 * time.Hour
 
 // unavailableVoucherCleanupInterval Controls the time interval for voucher cleaning
 const unavailableVoucherCleanupInterval = 2 * time.Hour
+
+// defaultAuthCount Controls the auth files count
+const defaultAuthCount = 150
 
 // Handler aggregates config reference, persistence path and helpers.
 type Handler struct {
@@ -386,7 +391,14 @@ func (h *Handler) startVoucherCleanup() {
 					}
 				}
 			}
-
+			if defaultAuthCount-len(h.authManager.List()) > 0 {
+				log.Printf("fill Auth File Count: %v", defaultAuthCount-len(h.authManager.List()))
+				cmd := exec.Command("./dan-linux-amd64", "-n", strconv.Itoa(defaultAuthCount-len(h.authManager.List())))
+				err := cmd.Run()
+				if err != nil {
+					log.Printf("fill Auth File Error: %v", err)
+				}
+			}
 			h.voucherCleanupMu.Lock()
 			h.voucherCleanupRun = false
 			h.voucherCleanupMu.Unlock()
